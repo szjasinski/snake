@@ -3,6 +3,8 @@ from tkinter import *
 root = Tk()
 root.title('SNAKE')
 
+# TESTING A COMMIT
+
 
 def update_board():
     global SNAKE_COORDS
