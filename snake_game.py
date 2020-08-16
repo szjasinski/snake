@@ -1,222 +1,193 @@
-from tkinter import *
+import tkinter as tk
 import random
 
-root = Tk()
-root.title('SNAKE')
 
-# CHECKING IF NEW BRANCH WORKS
+class Snake(tk.Frame):
+    def __init__(self, parent, *args, **kwargs):
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
 
-my_frame = Frame(root, width=500, height=500, highlightbackground="black")
-my_frame.pack(fill=BOTH, expand=1)
+        my_frame = tk.Frame(parent)
 
-COORDS_SQUARE_DICT = {}
-N = 20  # size of the edge of a board
-REFRESH_TIME = 100  # in miliseconds. Time between snake moves
+        coords_label_dict = {}
+        board_len = 20  # size of the edge of a board
+        refresh_time = 100  # in milliseconds. Time taken by snake to move his head to another square
 
-COUNTER = [N-1, int((N-1)/2)]
-DIRECTION = "top"
-SNAKE_TAIL = [COUNTER]
-SNAKE_LAST_SQUARE = "none"
-FOOD_TIMER = 0
-FOOD_LIST = []
-GAME_OVER = False
-SCOREBOARD = Label(my_frame, text="Score: 0", font=("Helvetica", 16, "bold"))
+        position = [board_len-1, int((board_len-1)/2)]
+        direction = "top"
+        snake_tail = [position]
+        snake_last_fragment = "none"
+        food_timer = 0
+        food_list = []
+        game_over = False
+        scoreboard = tk.Label(my_frame, text="Score: 1", font=("Helvetica", 16, "bold"))
 
-black_image = PhotoImage(file="black_16x16.png")
-green_image = PhotoImage(file="green_16x16.png")
-dark_green_image = PhotoImage(file="dark_green_16x16.png")
-red_image = PhotoImage(file="red_16x16.png")
+        black_image = tk.PhotoImage(file="black_16x16.png")
+        green_image = tk.PhotoImage(file="green_16x16.png")
+        dark_green_image = tk.PhotoImage(file="dark_green_16x16.png")
+        red_image = tk.PhotoImage(file="red_16x16.png")
 
+        def reset_game(event):
+            nonlocal position
+            nonlocal direction
+            nonlocal snake_tail
+            nonlocal snake_last_fragment
+            nonlocal food_timer
+            nonlocal food_list
+            nonlocal game_over
+            nonlocal scoreboard
 
-def reset_game(event):
-    global COUNTER
-    global DIRECTION
-    global SNAKE_TAIL
-    global SNAKE_LAST_SQUARE
-    global FOOD_TIMER
-    global FOOD_LIST
-    global GAME_OVER
-    global SCOREBOARD
+            position = [board_len - 1, int((board_len - 1) / 2)]
+            direction = "top"
+            snake_tail = [position]
+            snake_last_fragment = "none"
+            food_timer = 0
+            food_list = []
+            game_over = False
+            scoreboard = tk.Label(my_frame, text="Score: 0", font=("Helvetica", 16, "bold"))
 
-    COUNTER = [N - 1, int((N - 1) / 2)]
-    DIRECTION = "top"
-    SNAKE_TAIL = [COUNTER]
-    SNAKE_LAST_SQUARE = "none"
-    FOOD_TIMER = 0
-    FOOD_LIST = []
-    GAME_OVER = False
-    SCOREBOARD = Label(my_frame, text="Score: 0", font=("Helvetica", 16, "bold"))
+            construct_board()
+            update_board()
 
-    construct_board()
-    update_board()
+        def top_direction(event):
+            nonlocal direction
+            if direction != "bot":
+                direction = "top"
 
+        def bot_direction(event):
+            nonlocal direction
+            if direction != "top":
+                direction = "bot"
 
-def top_direction(event):
-    global DIRECTION
-    if DIRECTION != "bot":
-        DIRECTION = "top"
+        def left_direction(event):
+            nonlocal direction
+            if direction != "right":
+                direction = "left"
 
+        def right_direction(event):
+            nonlocal direction
+            if direction != "left":
+                direction = "right"
 
-def bot_direction(event):
-    global DIRECTION
-    if DIRECTION != "top":
-        DIRECTION = "bot"
+        def get_food_coords():
+            x = random.randint(0, board_len-1)
+            y = random.randint(0, board_len-1)
 
+            return x, y
 
-def left_direction(event):
-    global DIRECTION
-    if DIRECTION != "right":
-        DIRECTION = "left"
-    print(DIRECTION)
+        def get_coords_of_snake_fragment():
+            nonlocal position
 
+            x, y = position
 
-def right_direction(event):
-    global DIRECTION
-    if DIRECTION != "left":
-        DIRECTION = "right"
+            if x > 0 and direction == "top":
+                x = x - 1
 
+            if x < board_len - 1 and direction == "bot":
+                x = x + 1
 
-def get_food_coords():
-    x = random.randint(0, N-1)
-    y = random.randint(0, N-1)
+            if y > 0 and direction == "left":
+                y = y - 1
 
-    return x, y
+            if y < board_len - 1 and direction == "right":
+                y = y + 1
 
+            position = (x, y)
+            coords_of_snake_fragment = tuple(position)
+            return coords_of_snake_fragment
 
-def get_coords_of_snake_fragment():
-    global COUNTER
+        def get_coords_of_snake(old_snake_coords):
+            nonlocal snake_last_fragment
+            nonlocal snake_tail
+            nonlocal game_over
 
-    x = COUNTER[0]
-    y = COUNTER[1]
+            new_snake_coords = []
+            new_snake_fragment = get_coords_of_snake_fragment()
 
-    if x > 0 and DIRECTION == "top":
-        x = x - 1
+            print("old snake coords", old_snake_coords)
+            print("new snake fragment", new_snake_fragment)
 
-    if x < N - 1 and DIRECTION == "bot":
-        x = x + 1
+            if new_snake_fragment in old_snake_coords:
+                game_over = True
 
-    if y > 0 and DIRECTION == "left":
-        y = y - 1
+            if not game_over:
+                new_snake_coords = old_snake_coords
+                new_snake_coords.append(new_snake_fragment)
+                if new_snake_fragment not in food_list:  # snake is not extending
+                    snake_last_fragment = new_snake_coords.pop(0)
+                snake_tail = new_snake_coords
 
-    if y < N - 1 and DIRECTION == "right":
-        y = y + 1
+            return new_snake_coords
 
-    COUNTER = (x, y)
-    coords_of_snake_fragment = tuple(COUNTER)
+        def draw_snake(snake_coords):
+            for element in snake_coords:
+                if snake_coords.index(element) == len(snake_coords)-1:  # coloring snake head in dark green
+                    img = dark_green_image
+                else:  # coloring the rest of snake tail in normal green
+                    img = green_image
+                snake_square = coords_label_dict[tuple(element)]
+                snake_square.config(image=img)
+                snake_square.grid(row=element[0], column=element[1])
 
-    return coords_of_snake_fragment
+            coords_label_dict[tuple(snake_last_fragment)].config(image=black_image)
 
+        def update_board():
+            nonlocal food_timer
 
-def get_coords_of_snake(old_snake_coords):
-    global SNAKE_LAST_SQUARE
-    global SNAKE_TAIL
-    global GAME_OVER
-    new_snake_coords = []
-    new_snake_fragment = get_coords_of_snake_fragment()
+            snake_coords_list = get_coords_of_snake(snake_tail)
+            draw_snake(snake_coords_list)
 
-    print("old snake coords", old_snake_coords)
-    print("new snake fragment", new_snake_fragment)
+            food_timer = food_timer + 1
+            if food_timer in range(0, 100000000, 20):
+                food_coords = get_food_coords()
+                while food_coords in snake_coords_list:
+                    food_coords = get_food_coords()
+                food_list.append(food_coords)
+                coords_label_dict[food_coords].config(image=red_image)  # draw food
 
-    for element in old_snake_coords:
-        if element == new_snake_fragment:
-            GAME_OVER = True
+            score = len(snake_tail)
+            score_txt = " Score: " + str(score)
+            scoreboard.config(text=score_txt)
+            scoreboard.grid(row=board_len + 1, column=0, columnspan=7)
 
-    if not GAME_OVER:
-        is_snake_extending = False
-        for element in FOOD_LIST:
-            if element == new_snake_fragment:
-                is_snake_extending = True
-        if is_snake_extending:
-            new_snake_coords = old_snake_coords
-            new_snake_coords.append(new_snake_fragment)
-        else:
-            new_snake_coords = old_snake_coords
-            new_snake_coords.append(new_snake_fragment)
-            SNAKE_LAST_SQUARE = new_snake_coords.pop(0)
-        SNAKE_TAIL = new_snake_coords
+            # print(" ")
+            # print("snake tail", snake_tail)
+            # print("snake_last_fragment", snake_last_fragment)
+            # print("food list", food_list)
+            # print(" ")
 
-    return new_snake_coords
+            if not game_over:
+                root.after(refresh_time, update_board)
 
+        def construct_board():
+            for x in range(0, board_len):
+                for y in range(0, board_len):
+                    square = tk.Label(my_frame, image=black_image, borderwidth=0, highlightthickness=0)
+                    coords_label_dict[(x, y)] = square
+                    coords_label_dict[(x, y)].grid(row=x, column=y)
 
-def draw_snake(snake_coords, snake_last_square):
-    global COORDS_SQUARE_DICT
+            advice_label = tk.Label(my_frame, text="Press Space (only once) to restart")
+            advice_label.grid(row=board_len + 1, column=6, columnspan=15)
 
-    for element in snake_coords:
-        if snake_coords.index(element) == len(snake_coords)-1:  # coloring snake head in darker green
-            img = dark_green_image
-        else:
-            img = green_image
-        snake_square = COORDS_SQUARE_DICT[tuple(element)]
-        snake_square.config(image=img)
-        snake_square.grid(row=element[0], column=element[1])
+        construct_board()
+        update_board()
 
-    COORDS_SQUARE_DICT[tuple(snake_last_square)].config(image=black_image)
+        root.focus_set()
+        root.bind("<w>", top_direction)
+        root.bind("<s>", bot_direction)
+        root.bind("<a>", left_direction)
+        root.bind("<d>", right_direction)
+        root.bind("<Up>", top_direction)
+        root.bind("<Down>", bot_direction)
+        root.bind("<Left>", left_direction)
+        root.bind("<Right>", right_direction)
+        root.bind("<space>", reset_game)
 
-
-def draw_food(food_coords):
-    global COORDS_SQUARE_DICT
-    COORDS_SQUARE_DICT[food_coords].config(image=red_image)
-
-
-def update_board():
-    global COUNTER
-    global FOOD_TIMER
-    global SCOREBOARD
-
-    snake_coords_list = get_coords_of_snake(SNAKE_TAIL)
-    draw_snake(snake_coords_list, SNAKE_LAST_SQUARE)
-
-    FOOD_TIMER = FOOD_TIMER + 1
-    if FOOD_TIMER in range(0, 100000000, 20):
-        food_coords = get_food_coords()
-        while food_coords in snake_coords_list:
-            food_coords = get_food_coords()
-        FOOD_LIST.append(food_coords)
-        draw_food(food_coords)
-
-    score = len(SNAKE_TAIL)
-    score_txt = " Score: " + str(score)
-    SCOREBOARD.config(text=score_txt)
-    SCOREBOARD.grid(row=N + 1, column=0, columnspan=7)
-
-    # print(" ")
-    # print("snake tail", SNAKE_TAIL)
-    # print("snake_last_square", SNAKE_LAST_SQUARE)
-    # print("food list", FOOD_LIST)
-    # print(" ")
-
-    if not GAME_OVER:
-        root.after(REFRESH_TIME, update_board)
+        my_frame.pack()
 
 
-def construct_board():
-
-    for x in range(0, N):
-        for y in range(0, N):
-            square = Label(my_frame, image=black_image, borderwidth=0, highlightthickness=0)
-            COORDS_SQUARE_DICT[(x, y)] = square
-            COORDS_SQUARE_DICT[(x, y)].grid(row=x, column=y)
-
-    advice_label = Label(my_frame, text="Press Space to reset")
-    advice_label.grid(row=N + 1, column=8, columnspan=10)
-
-
-construct_board()
-update_board()
-
-root.focus_set()
-
-root.bind("<w>", top_direction)
-root.bind("<s>", bot_direction)
-root.bind("<a>", left_direction)
-root.bind("<d>", right_direction)
-
-root.bind("<Up>", top_direction)
-root.bind("<Down>", bot_direction)
-root.bind("<Left>", left_direction)
-root.bind("<Right>", right_direction)
-
-root.bind("<space>", reset_game)
-
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title('SNAKE')
+    Snake(root).pack()
+    root.mainloop()
