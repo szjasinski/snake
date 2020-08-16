@@ -4,6 +4,7 @@ import random
 root = Tk()
 root.title('SNAKE')
 
+# CHECKING IF NEW BRANCH WORKS
 
 my_frame = Frame(root, width=500, height=500, highlightbackground="black")
 my_frame.pack(fill=BOTH, expand=1)
